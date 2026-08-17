@@ -38,24 +38,61 @@ class MatriculaController extends Controller
      */
     public function store(Request $request)
     {
-        /*try{
-            $request->validate([
-                'ingreso' => 'required|in:Nuevo Ingreso,Reingreso',
-                'foto' => 'required|string|max:300',
+
+    $request->validate([
+                'ingreso' => 'required|in:Nuevo ingreso,Reingreso',
+                'foto' => 'required|image|max:2048',
                 'estudiante_id' => 'required|exists:estudiantes,id',
                 'enfermedad_id' => 'required|exists:enfermedades,id',
                 'seccion_id' => 'nullable|exists:secciones,id',
-                'especialidad_id' => 'required|exists:especalidades,id',
+                'especialidad_id' => 'required|exists:especialidades,id',
+                'encargado_id' => 'required|exists:encargados,id',
             ]);
 
-            $anioActual = (string) now()->year;
+            DB::beginTransaction();
+
+        try {
+            $rutaF = null;
+
+            if ($request->hasFile('foto')) {
+                $nombre = 'foto_'.uniqid().'.'.$request->file('foto')
+                    ->getClientOriginalExtension();
+                $request->file('foto')->storeAs('public/foto', $nombre);
+                $rutaF = '/storage/foto/'.$nombre;
+            }
 
             $matricula = Matricula::create([
                 'ingreso' => $request->ingreso,
-                'anio' => $anioActual,
-
+                'anio' => (string) now()->year,
+                'foto' => $rutaF,
+                'estudiante_id' => $request->estudiante_id,
+                'enfermedad_id' => $request->enfermedad_id,
+                'seccion_id' => $request->seccion_id,
+                'especialidad_id' => $request->especialidad_id,
+                'encargado_id' => $request->encargado_id,
             ]);
-        }*/
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Matricula creada exitosamente',
+                'matricula' => $matricula,
+            ], 201);
+
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            if(isset($nombre)&& Storage::exists('public/foto/'.$nombre)){
+                Storage::delete('public/foto/'. $nombre);
+            }
+            
+            return response()->json([
+                'message' => 'Error al crear la matricula',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+
     }
 
     /**
@@ -82,7 +119,49 @@ class MatriculaController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        DB::beginTransaction();
+
+        try {
+
+            $matricula = Matricula::findOrFail($id);
+
+            $validated = $request->validate([
+                'seccion_id' => 'nullable|exists:secciones,id',
+                'enfermedad_id' => 'required|exists:enfermedades,id',
+                'encargado_id' => 'required|exists:encargados,id',
+                'especialidad_id' => 'required|exists:especialidades,id',
+            ]);
+
+
+            $matricula->seccion_id = $request->seccion_id;
+            $matricula->enfermedad_id = $request->enfermedad_id;
+            $matricula->encargado_id = $request->encargado_id;
+            $matricula->especialidad_id = $request->especialidad_id;
+
+            $matricula->save();
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Matrícula actualizada exitosamente',
+                'matricula' => $matricula,
+            ], 200);
+
+        } catch (ModelNotFoundException $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'message' => 'No se encontró la matrícula con el ID: '.$id,
+            ], 404);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'message' => 'Error al actualizar la matrícula',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**
@@ -97,10 +176,6 @@ class MatriculaController extends Controller
     {
         try {
 
-            $request->validate([
-                'estado' => 'required|in:pendiente,aprobado,rechazado',
-            ]);
-
             $matriculas = Matricula::with('estudiantes')->findOrFail($id);
 
             if (! $matriculas) {
@@ -108,6 +183,10 @@ class MatriculaController extends Controller
                     'message' => 'Matricula no encontrada',
                 ], 404);
             }
+
+            $request->validate([
+                'estado' => 'required|in:pendiente,aprobado,rechazado',
+            ]);
 
             $nuevo = $request->estado;
             $estadoA = $matriculas->estado;
@@ -128,13 +207,13 @@ class MatriculaController extends Controller
 
             $matriculas->update();
 
-            if($nuevo === 'aprobado'){
+            if ($nuevo === 'aprobado') {
                 $estudiante = $matriculas->estudiante;
 
-                if($estudiante->estado !== 'inscrito'){
+                if ($estudiante->estado !== 'inscrito') {
                     return response()->json([
-                        'message' => 'El estudiante no esta inscrito'
-                    ],404);
+                        'message' => 'El estudiante no esta inscrito',
+                    ], 404);
                 }
                 $estudiante->estado = 'activo';
                 $estudiante->update();
@@ -343,7 +422,7 @@ class MatriculaController extends Controller
 
             $matriculaExistente = Matricula::where('estudiante_id', $request->estudiante_id)
                 ->where('anio', $anioActual)
-                ->whereIn('estado', ['pendiente', 'aprobado']) // Considerar solo matrículas pendientes o aprobadas
+                ->whereIn('estado', ['pendiente', 'aprobado'])
                 ->exists();
 
             if ($matriculaExistente) {

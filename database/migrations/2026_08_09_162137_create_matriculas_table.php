@@ -16,7 +16,7 @@ return new class extends Migration
             $table->enum('ingreso',['Nuevo ingreso','Reingreso']);
             $table->string('anio', 4);
             $table->enum('estado', ['pendiente', 'aprobado', 'rechazado'])->default('pendiente');
-            $table->string('foto', 300);
+            $table->string('foto');
             $table->unsignedBigInteger('estudiante_id');
             $table->foreign('estudiante_id')->references('id')->on('estudiantes');
             $table->unsignedBigInteger('seccion_id')->nullable();
@@ -25,7 +25,8 @@ return new class extends Migration
             $table->foreign('especialidad_id')->references('id')->on('especialidades');
             $table->unsignedBigInteger('encargado_id');
             $table->foreign('encargado_id')->references('id')->on('encargados');
-
+            $table->unsignedBigInteger('enfermedad_id');
+            $table->foreign('enfermedad_id')->references('id')->on('enfermedades');
             $table->timestamps();
         });
     }

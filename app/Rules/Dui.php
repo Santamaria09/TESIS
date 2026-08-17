@@ -17,7 +17,6 @@ class Dui implements ValidationRule
     {
         $dui = str_replace('-', '', $value);
 
-        // Se corrigió a {9} para validar la longitud exacta de los 9 dígitos del DUI
         if(!preg_match('/^[0-9]{9}$/', $dui)) {
             $fail('Campo Dui no cumple con el formato requerido.');
             return;
