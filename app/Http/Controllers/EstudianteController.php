@@ -27,7 +27,7 @@ class EstudianteController extends Controller
                 'nombre' => 'required|string|max:80',
                 'genero' => 'required|in:Masculino,Femenino',
                 'distrito_id' => 'required|exists:distritos,id',
-                'nie' => 'required|string|max:10|unique:estudiantes,nie',
+                'nie' => 'nullable|string|max:10|unique:estudiantes,nie',
                 'direccion' => 'required|string|max:100',
                 'canton' => 'nullable|string|max:50',
                 'registro_id' => 'required|exists:registros,id',

@@ -5,7 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\Estudiante;
 use App\Models\Matricula;
 use App\Models\Seccion;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class MatriculaController extends Controller
 {
@@ -15,7 +18,12 @@ class MatriculaController extends Controller
     public function index(Request $request)
     {
         try {
-            $query = Matricula::with(['estudiante', 'especialidad', 'ingreso'])->orderBy('id', 'desc');
+            $query = Matricula::with([
+                'estudiante:id,nombre',
+                'especialidad:id,nombre',
+            ])
+                ->select('id', 'created_at', 'ingreso', 'estado', 'estudiante_id', 'especialidad_id')
+                ->orderBy('id', 'desc');
 
             if ($request->has('estado')) {
                 $query->where('estado', $request->estado);
@@ -23,7 +31,7 @@ class MatriculaController extends Controller
 
             $matriculas = $query->get();
 
-            return response()->json(['matriculas', $matriculas], 200);
+            return response()->json(['matriculas' => $matriculas], 200);
 
         } catch (\Exception $e) {
             return response()->json([
@@ -39,17 +47,16 @@ class MatriculaController extends Controller
     public function store(Request $request)
     {
 
-    $request->validate([
-                'ingreso' => 'required|in:Nuevo ingreso,Reingreso',
-                'foto' => 'required|image|max:2048',
-                'estudiante_id' => 'required|exists:estudiantes,id',
-                'enfermedad_id' => 'required|exists:enfermedades,id',
-                'seccion_id' => 'nullable|exists:secciones,id',
-                'especialidad_id' => 'required|exists:especialidades,id',
-                'encargado_id' => 'required|exists:encargados,id',
-            ]);
+        $request->validate([
+            'ingreso' => 'required|in:Nuevo ingreso,Reingreso',
+            'estudiante_id' => 'required|exists:estudiantes,id',
+            'enfermedad_id' => 'required|exists:enfermedades,id',
+            'seccion_id' => 'nullable|exists:secciones,id',
+            'especialidad_id' => 'required|exists:especialidades,id',
+            'encargado_id' => 'required|exists:encargados,id',
+        ]);
 
-            DB::beginTransaction();
+        DB::beginTransaction();
 
         try {
             $rutaF = null;
@@ -79,14 +86,13 @@ class MatriculaController extends Controller
                 'matricula' => $matricula,
             ], 201);
 
-
         } catch (\Exception $e) {
             DB::rollBack();
 
-            if(isset($nombre)&& Storage::exists('public/foto/'.$nombre)){
-                Storage::delete('public/foto/'. $nombre);
+            if (isset($nombre) && Storage::exists('public/foto/'.$nombre)) {
+                Storage::delete('public/foto/'.$nombre);
             }
-            
+
             return response()->json([
                 'message' => 'Error al crear la matricula',
                 'error' => $e->getMessage(),
@@ -101,11 +107,11 @@ class MatriculaController extends Controller
     public function show(string $id)
     {
         try {
-            $matricula = Matricula::with(['estudiante', 'nie.estudiante'])->findOrFail($id);
+            $matricula = Matricula::with(['estudiante', 'especialidad', 'seccion'])->findOrFail($id);
 
             return response()->json($matricula);
 
-        } catch (\ModelNotFoundException $e) {
+        } catch (ModelNotFoundException $e) {
             return response()->json([
                 'message' => 'Matricula no encontrada',
                 'error' => $e->getMessage(),
@@ -131,7 +137,6 @@ class MatriculaController extends Controller
                 'encargado_id' => 'required|exists:encargados,id',
                 'especialidad_id' => 'required|exists:especialidades,id',
             ]);
-
 
             $matricula->seccion_id = $request->seccion_id;
             $matricula->enfermedad_id = $request->enfermedad_id;
@@ -174,15 +179,11 @@ class MatriculaController extends Controller
 
     public function estadoMatricula(Request $request, $id)
     {
+        DB::beginTransaction();
+
         try {
 
-            $matriculas = Matricula::with('estudiantes')->findOrFail($id);
-
-            if (! $matriculas) {
-                return response()->json([
-                    'message' => 'Matricula no encontrada',
-                ], 404);
-            }
+            $matriculas = Matricula::with('estudiante')->findOrFail($id);
 
             $request->validate([
                 'estado' => 'required|in:pendiente,aprobado,rechazado',
@@ -203,14 +204,22 @@ class MatriculaController extends Controller
                 ], 400);
             }
 
-            $matriculas->estado = $nuevo;
-
-            $matriculas->update();
-
             if ($nuevo === 'aprobado') {
+
+                if (! $matriculas->seccion_id) {
+
+                    DB::rollBack();
+
+                    return response()->json([
+                        'message' => 'No se puede aprobar la matrícula porque no tiene una sección asignada',
+                    ], 422);
+                }
                 $estudiante = $matriculas->estudiante;
 
                 if ($estudiante->estado !== 'inscrito') {
+
+                    DB::rollBack();
+
                     return response()->json([
                         'message' => 'El estudiante no esta inscrito',
                     ], 404);
@@ -219,11 +228,20 @@ class MatriculaController extends Controller
                 $estudiante->update();
             }
 
+            $matriculas->estado = $nuevo;
+
+            $matriculas->update();
+
+            DB::commit();
+
             return response()->json([
-                'message' => "La matricula $matriculas ha sido actualizada correctamente",
+                'message' => 'La matricula ha sido actualizada correctamente',
                 'matriculas' => $matriculas,
             ]);
         } catch (\Exception $e) {
+
+            DB::rollBack();
+
             return response()->json([
                 'message' => 'Error al actualizar el estado la matricula',
                 'error' => $e->getMessage(),
@@ -277,6 +295,7 @@ class MatriculaController extends Controller
             return response()->json([
                 'estudiantes' => $estudiante,
             ], 200);
+
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al obtener los estudiantes inscritos',
@@ -288,7 +307,7 @@ class MatriculaController extends Controller
     public function padresEstudiante(string $estudianteId)
     {
         try {
-            $estudiante = Estudiante::with('padres')->find($estudianteId);
+            $estudiante = Estudiante::with('padres')->findOrFail($estudianteId);
 
             return response()->json([
                 'padres' => $estudiante->padres,
@@ -298,18 +317,96 @@ class MatriculaController extends Controller
             return response()->json([
                 'message' => 'Error al obtener los padres del estudiante',
                 'error' => $e->getMessage(),
-            ], 500);
+            ], 404);
         }
     }
 
-    /*public function validarGrado($estudiante, $grado)
+    public function validarGrado(Request $request, $estudiante, $grado)
     {
-        try{
-            $estudiante = Estudiante::with('matriculas')->findOrFail($estudiante);
+        try {
+            $request->validate([
+            'ingreso' => 'required|in:Nuevo ingreso,Reingreso',
+        ]);
 
+            if ($request === 'Nuevo ingreso') {
+            return response()->json([
+                'permitido' => true,
+                'message' => 'El estudiante es de nuevo ingreso. No requiere validar historial.'
+            ], 200);
+        }
+
+            $estudiante = Estudiante::with('matriculas.seccion',
+                'matriculas.anioCursado')->findOrFail($estudiante);
+
+            if ($estudiante->matriculas->isEmpty()) {
+                return response()->json([
+                    'permitido' => true,
+                    'message' => 'El estudiante es de nuevo ingreso, no tiene historial',
+                ]);
+            }
+
+            $ultimaMatricula = $estudiante->matriculas
+                ->sortByDesc('id')->first();
+
+            if (! $ultimaMatricula->seccion) {
+                return response()->json([
+                    'permitido' => false,
+                    'message' => 'La matrícula anterior no tiene una sección asignada.',
+                ], 422);
+            }
+
+                $ultimoCursado = $ultimaMatricula->seccion->grado_id;
+
+                if ($ultimaMatricula->anioCursado->isEmpty()) {
+                    return response()->json([
+                        'permitido' => false,
+                        'message' => 'No hay registros de notas para el año cursado.',
+                    ], 422);
+                }
+
+                $promedioFinal = $ultimaMatricula->anioCursado->avg('nota') ?? 0;
+                $aprobado = $promedioFinal >= 7.0;
+
+                if (! $aprobado) {
+                    if ($grado != $ultimoCursado) {
+                        return response()->json([
+                            'permitido' => false,
+                            'grado_permitido' => $ultimoCursado,
+                            'message' => 'El estudiante reprobó el ciclo anterior. Debe volver a cursar el mismo grado.',
+                        ], 422);
+                    }
+                }
+
+                if ($aprobado) {
+                    $gradoSolicitado = $ultimoCursado + 1;
+
+                    if ($grado != $gradoSolicitado) {
+                        return response()->json([
+                            'permitido' => false,
+                            'grado_permitido' => $gradoSolicitado,
+                            'message' => 'El estudiante aprobó el grado anterior. Solo se le permite matricular el grado consecutivo.',
+                        ], 422);
+                    }
+                }
+
+                return response()->json([
+                    'permitido' => true,
+                    'message' => 'Grado validado correctamente.',
+                ], 200);
+
+
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'message' => 'Estudiante no encontrado'], 404);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al validar el grado',
+                'error' => $e->getMessage(),
+            ], 500);
 
         }
-    }*/
+    }
 
     public function disponibilidadSeccion(Request $request)
     {
@@ -324,6 +421,10 @@ class MatriculaController extends Controller
             $secciones = Seccion::where('grado_id', $request->grado_id)
                 ->where('turno', $request->turno)
                 ->where('anio', $anioActual)
+                ->withCount(['matriculas' => function ($query) use ($anioActual) {
+                    $query->where('anio', $anioActual)
+                          ->whereIn('estado', ['pendiente', 'aprobado']);
+                }])
                 ->get();
 
             if ($secciones->isEmpty()) {
@@ -331,19 +432,11 @@ class MatriculaController extends Controller
                     'disponibilidad' => false,
                     'message' => 'No hay secciones disponibles para el grado y turno especificados.',
                 ], 200);
-
             }
 
-            $cuposDisponibles = 0;
-
-            foreach ($secciones as $seccion) {
-                $matriculasCount = Matricula::where('seccion_id', $seccion->id)
-                    ->where('anio', $anioActual)
-                    ->whereIn('estado', ['pendiente', 'aprobado'])
-                    ->count();
-                $cuposDisponibles += max(0, $seccion->capacidad - $matriculasCount);
-
-            }
+            $cuposDisponibles = $secciones->sum(function ($seccion) {
+                return max(0, $seccion->capacidad - $seccion->matriculas_count);
+            });
 
             if ($cuposDisponibles <= 0) {
                 return response()->json([
@@ -356,6 +449,7 @@ class MatriculaController extends Controller
                 'disponibilidad' => true,
                 'cupos_disponibles' => $cuposDisponibles,
             ], 200);
+
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al verificar la disponibilidad de secciones',
@@ -374,34 +468,31 @@ class MatriculaController extends Controller
 
             $anioActual = date('Y');
 
+            // OPTIMIZACIÓN: Contado directo con withCount
             $secciones = Seccion::where('grado_id', $request->grado_id)
                 ->where('turno', $request->turno)
                 ->where('anio', $anioActual)
+                ->withCount(['matriculas' => function ($query) use ($anioActual) {
+                    $query->where('anio', $anioActual)
+                          ->whereIn('estado', ['pendiente', 'aprobado']);
+                }])
                 ->get();
 
-            $seccionesDisponibles = [];
+            $seccionesDisponibles = $secciones->map(function ($seccion) {
+                $cuposDisponibles = max(0, $seccion->capacidad - $seccion->matriculas_count);
 
-            foreach ($secciones as $seccion) {
-                $matriculasCount = Matricula::where('seccion_id', $seccion->id)
-                    ->where('anio', $anioActual)
-                    ->whereIn('estado', ['pendiente', 'aprobado'])
-                    ->count();
-
-                $cuposDisponibles = max(0, $seccion->capacidad - $matriculasCount);
-
-                if ($cuposDisponibles > 0) {
-                    $seccionesDisponibles[] = [
-                        'id' => $seccion->id,
-                        'nombre' => $seccion->nombre,
-                        'capacidad' => $seccion->capacidad,
-                        'cupos_disponibles' => $cuposDisponibles,
-                    ];
-                }
-            }
+                return [
+                    'id' => $seccion->id,
+                    'nombre' => $seccion->nombre,
+                    'capacidad' => $seccion->capacidad,
+                    'cupos_disponibles' => $cuposDisponibles,
+                ];
+            })->filter(fn($seccion) => $seccion['cupos_disponibles'] > 0)->values();
 
             return response()->json([
                 'secciones' => $seccionesDisponibles,
             ], 200);
+
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al obtener las secciones disponibles',
