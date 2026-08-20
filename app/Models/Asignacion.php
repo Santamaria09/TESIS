@@ -11,7 +11,7 @@ class Asignacion extends Model
     protected $fillable = [
         'anio',
         'profesor_id',
-        'materia_id',
+        'asignatura_id',
         'grado_id',
 
     ];
@@ -26,8 +26,8 @@ class Asignacion extends Model
         return $this->belongsTo(Grado::class);
     }
 
-    public function materia()
+    public function asignatura()
     {
-        return $this->belongsTo(Materia::class);
+        return $this->belongsTo(Asignatura::class);
     }
 }

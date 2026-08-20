@@ -13,10 +13,13 @@ class Matricula extends Model
         'anio',
         'estado',
         'foto',
+        'foto_academica',
         'estudiante_id',
         'seccion_id',
         'especialidad_id',
+        'enfermedad_id',
         'encargado_id',
+        'user_id',
     ];
 
     // Relación Mucho a Muchos con Discapacidad (vía tabla 'expedientes')
@@ -49,5 +52,15 @@ class Matricula extends Model
     public function encargado()
     {
         return $this->belongsTo(Encargado::class, 'encargado_id');
+    }
+
+    public function enfermedad()
+    {
+        return $this->belongsTo(Enfermedad::class, 'enfermedad_id');
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 }

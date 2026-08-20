@@ -16,7 +16,7 @@ class AsignacionController extends Controller
     public function index()
     {
         try {
-            $asignaciones = Asignacion::with('profesor', 'materia', 'grado')->orderBy('id', 'desc')->get();
+            $asignaciones = Asignacion::with('profesor', 'asignatura', 'grado')->orderBy('id', 'desc')->get();
             return response()->json(['asignaciones' => $asignaciones], 200);
         } catch (\Exception $e) {
             return response()->json([
@@ -35,7 +35,7 @@ class AsignacionController extends Controller
             $request->validate([
                 'anio' => 'required|integer|digits:4|min:2025|max:2100',
                 'profesor_id' => 'required|exists:profesores,id',
-                'materia_id' => 'required|exists:materias,id',
+                'asignatura_id' => 'required|exists:asignatura,id',
                 'grado_id' => 'required|exists:grados,id',
 
             ],
@@ -44,26 +44,26 @@ class AsignacionController extends Controller
                 'anio.digits' => 'El año debe tener 4 dígitos.',
                 'anio.min' => 'El año no puede ser menor a 2025.',
                 'profesor_id.required' => 'El profesor es obligatorio.',
-                'materia_id.required' => 'La materia es obligatoria.',
+                'asignatura_id.required' => 'La asignatura es obligatoria.',
                 'grado_id.required' => 'El grado es obligatorio.',
             ]);
 
             $exits = Asignacion::where('profesor_id', $request->profesor_id)
                 ->where('anio', $request->anio)
-                ->where('materia_id', $request->materia_id)
+                ->where('asignatura_id', $request->asignatura_id)
                 ->where('grado_id', $request->grado_id)
                 ->exists();
 
             if ($exits) {
                 return response()->json([
-                    'message' => 'La asignación ya existe para el profesor, materia, grado y año especificados.'
+                    'message' => 'La asignación ya existe para el profesor, asignatura, grado y año especificados.'
                 ], 422);
             }
 
             $asignacion = Asignacion::create([
                 'anio' => $request->anio,
                 'profesor_id' => $request->profesor_id,
-                'materia_id' => $request->materia_id,
+                'asignatura_id' => $request->asignatura_id,
                 'grado_id' => $request->grado_id,
             ]);
 
@@ -87,7 +87,7 @@ class AsignacionController extends Controller
     public function show(string $id)
     {
         try {
-            $asignacion = Asignacion::with('profesor', 'materia', 'grado')->findOrFail($id);
+            $asignacion = Asignacion::with('profesor', 'asignatura', 'grado')->findOrFail($id);
             return response()->json(['asignacion' => $asignacion], 200);
         } catch (ModelNotFoundException $e) {
             return response()->json([
@@ -115,7 +115,7 @@ class AsignacionController extends Controller
 
             // falta metodo de evaluacion
 
-            
+
             $asignacion->delete();
             return response()->json(['message' => 'Asignación eliminada exitosamente'], 200);
         } catch (ModelNotFoundException $e) {

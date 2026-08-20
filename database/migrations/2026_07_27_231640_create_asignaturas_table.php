@@ -11,9 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('materias', function (Blueprint $table) {
+        Schema::create('asignaturas', function (Blueprint $table) {
             $table->id();
             $table->string('nombre', 50)->nullable(false)->unique();
+            $table->unsignedBigInteger('plan_estudio_id')->nullable(false);
+            $table->foreign('plan_estudio_id')->references('id')->on('plan_estudios');
             $table->timestamps();
         });
     }

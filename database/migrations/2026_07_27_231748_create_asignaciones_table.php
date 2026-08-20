@@ -16,8 +16,8 @@ return new class extends Migration
             $table->year('anio')->nullable(false);
             $table->unsignedBigInteger('profesor_id');
             $table->foreign('profesor_id')->references('id')->on('profesores');
-            $table->unsignedBigInteger('materia_id');
-            $table->foreign('materia_id')->references('id')->on('materias');
+            $table->unsignedBigInteger('asignatura_id');
+            $table->foreign('asignatura_id')->references('id')->on('asignaturas');
             $table->unsignedBigInteger('grado_id');
             $table->foreign('grado_id')->references('id')->on('grados');
 

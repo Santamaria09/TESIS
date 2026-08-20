@@ -13,9 +13,9 @@ return new class extends Migration
     {
         Schema::create('expedientes', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('discapacidad_id')->nullable(false);
+            $table->unsignedBigInteger('discapacidad_id');
             $table->foreign('discapacidad_id')->references('id')->on('discapacidades');
-            $table->unsignedBigInteger('matricula_id')->nullable(false);
+            $table->unsignedBigInteger('matricula_id');
             $table->foreign('matricula_id')->references('id')->on('matriculas');
             $table->timestamps();
         });

@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('anio', 4);
             $table->enum('estado', ['pendiente', 'aprobado', 'rechazado'])->default('pendiente');
             $table->string('foto');
+            $table->string('foto_academica')->nullable();
             $table->unsignedBigInteger('estudiante_id');
             $table->foreign('estudiante_id')->references('id')->on('estudiantes');
             $table->unsignedBigInteger('seccion_id')->nullable();
@@ -27,6 +28,8 @@ return new class extends Migration
             $table->foreign('encargado_id')->references('id')->on('encargados');
             $table->unsignedBigInteger('enfermedad_id');
             $table->foreign('enfermedad_id')->references('id')->on('enfermedades');
+            $table->unsignedBigInteger('user_id')->nullable();
+            $table->foreign('user_id')->references('id')->on('users');
             $table->timestamps();
         });
     }

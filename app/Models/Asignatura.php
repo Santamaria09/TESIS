@@ -6,10 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class Materia extends Model
 {
-    protected $table = 'materias';
+    protected $table = 'asignaturas';
 
     protected $fillable = [
         'nombre',
+        'plan_estudio_id',
     ];
 
     public function asignaciones()

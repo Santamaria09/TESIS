@@ -54,12 +54,16 @@ class MatriculaController extends Controller
             'seccion_id' => 'nullable|exists:secciones,id',
             'especialidad_id' => 'required|exists:especialidades,id',
             'encargado_id' => 'required|exists:encargados,id',
+            'user_id' => 'nullable|exists:users,id',
+            'foto' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+            'foto_academica' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
         DB::beginTransaction();
 
         try {
             $rutaF = null;
+            $rutaAcademica = null;
 
             if ($request->hasFile('foto')) {
                 $nombre = 'foto_'.uniqid().'.'.$request->file('foto')
@@ -68,10 +72,17 @@ class MatriculaController extends Controller
                 $rutaF = '/storage/foto/'.$nombre;
             }
 
+            if ($request->hasFile('foto_academica')) {
+            $nombreAcademica = 'foto_academica_'.uniqid().'.'.$request->file('foto_academica')->getClientOriginalExtension();
+            $request->file('foto_academica')->storeAs('public/fotos_academicas', $nombreAcademica);
+            $rutaAcademica = '/storage/fotos_academicas/'.$nombreAcademica;
+        }
+
             $matricula = Matricula::create([
                 'ingreso' => $request->ingreso,
                 'anio' => (string) now()->year,
                 'foto' => $rutaF,
+                'foto_academica' => $rutaAcademica,
                 'estudiante_id' => $request->estudiante_id,
                 'enfermedad_id' => $request->enfermedad_id,
                 'seccion_id' => $request->seccion_id,
@@ -328,7 +339,7 @@ class MatriculaController extends Controller
             'ingreso' => 'required|in:Nuevo ingreso,Reingreso',
         ]);
 
-            if ($request === 'Nuevo ingreso') {
+            if ($request->ingreso === 'Nuevo ingreso') {
             return response()->json([
                 'permitido' => true,
                 'message' => 'El estudiante es de nuevo ingreso. No requiere validar historial.'

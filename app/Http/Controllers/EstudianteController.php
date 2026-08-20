@@ -25,6 +25,7 @@ class EstudianteController extends Controller
         try{
             $validated=$request->validate([
                 'nombre' => 'required|string|max:80',
+                'fecha_nacimiento' => 'required|date',
                 'genero' => 'required|in:Masculino,Femenino',
                 'distrito_id' => 'required|exists:distritos,id',
                 'nie' => 'nullable|string|max:10|unique:estudiantes,nie',
