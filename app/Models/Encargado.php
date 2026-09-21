@@ -14,11 +14,16 @@ class Encargado extends Model
         'telefono',
         'dui',
         'direccion',
-        'correo',
+        'user_id',
     ];
 
     public function matriculas()
     {
         return $this->hasMany(Matricula::class);
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 }

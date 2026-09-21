@@ -3,21 +3,24 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\Profesor;
+use App\Services\ProfesorService;
+use App\Rules\Dui;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Validation\ValidationException;
 
 class ProfesorController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
+    protected ProfesorService $profesorService;
+
+    public function __construct(ProfesorService $profesorService)
+    {
+        $this->profesorService = $profesorService;
+    }
+
     public function index()
     {
         try {
-            $profesores = Profesor::with('user')
-                ->orderBy('id', 'desc')
-                ->get();
+            $profesores = $this->profesorService->listar();
 
             return response()->json([
                 'profesores' => $profesores
@@ -31,34 +34,28 @@ class ProfesorController extends Controller
         }
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
         try {
-            $request->validate([
+            $data = $request->validate([
+                'nombre' => 'required|string|max:80',
+                'dui' => ['required', 'string', 'max:10', 'unique:profesores,dui', new Dui],
                 'fecha_nacimiento' => 'required|date',
                 'codigo' => 'required|string|max:15|unique:profesores,codigo',
                 'telefono' => 'required|string|max:10|unique:profesores,telefono|regex:/^[267][0-9]{3}-?[0-9]{4}$/',
                 'direccion' => 'required|string|max:100',
                 'user_id' => 'required|exists:users,id|unique:profesores,user_id',
             ], [
-                'fecha_nacimiento.required' => 'La fecha de nacimiento del profesor es obligatoria.',
-                'codigo.max' => 'El código del profesor no debe exceder los 15 caracteres.',
+                'nombre.required' => 'El nombre del profesor es obligatorio.',
+                'dui.required' => 'El DUI del profesor es obligatorio.',
+                'dui.unique' => 'El DUI del profesor ya está registrado.',
                 'codigo.unique' => 'El código del profesor ya está registrado.',
                 'telefono.unique' => 'El teléfono del profesor ya está registrado.',
                 'direccion.required' => 'La dirección del profesor es obligatoria.',
                 'user_id.unique' => 'El usuario ya está asignado a otro profesor.',
             ]);
 
-            $profesor = Profesor::create([
-                'fecha_nacimiento' => $request->fecha_nacimiento,
-                'codigo' => $request->codigo,
-                'telefono' => $request->telefono,
-                'direccion' => $request->direccion,
-                'user_id' => $request->user_id,
-            ]);
+            $profesor = $this->profesorService->crear($data);
 
             return response()->json([
                 'message' => 'Profesor registrado exitosamente',
@@ -79,13 +76,10 @@ class ProfesorController extends Controller
         }
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show(string $id)
     {
         try {
-            $profesor = Profesor::with('user')->findOrFail($id);
+            $profesor = $this->profesorService->obtener($id);
 
             return response()->json($profesor);
 
@@ -97,39 +91,35 @@ class ProfesorController extends Controller
         }
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, string $id)
     {
         try {
-            $profesor = Profesor::findOrFail($id);
-
-            $request->validate([
+            $data = $request->validate([
+                'nombre' => 'required|string|max:80',
+                'dui' => ['required', 'string', 'max:10', 'unique:profesores,dui,' . $id, new Dui],
                 'fecha_nacimiento' => 'required|date',
                 'codigo' => 'required|string|max:15|unique:profesores,codigo,' . $id,
                 'telefono' => 'required|string|max:10|unique:profesores,telefono,' . $id . '|regex:/^[267][0-9]{3}-?[0-9]{4}$/',
                 'direccion' => 'required|string|max:100',
                 'user_id' => 'required|exists:users,id|unique:profesores,user_id,' . $id,
             ], [
+                'nombre.required' => 'El nombre del profesor es obligatorio.',
+                'nombre.max' => 'El nombre del profesor no debe exceder los 80 caracteres.',
+                'dui.required' => 'El DUI del profesor es obligatorio.',
+                'dui.unique' => 'El DUI del profesor ya está registrado.',
                 'fecha_nacimiento.required' => 'La fecha de nacimiento del profesor es obligatoria.',
                 'codigo.max' => 'El código del profesor no debe exceder los 15 caracteres.',
                 'codigo.unique' => 'El código del profesor ya está registrado.',
                 'telefono.unique' => 'El teléfono del profesor ya está registrado.',
                 'direccion.required' => 'La dirección del profesor es obligatoria.',
+                'user_id.unique' => 'El usuario ya está asignado a otro profesor.',
             ]);
 
-            $profesor->update([
-                'fecha_nacimiento' => $request->fecha_nacimiento,
-                'codigo' => $request->codigo,
-                'telefono' => $request->telefono,
-                'direccion' => $request->direccion,
-                'user_id' => $request->user_id,
-            ]);
+            $profesor = $this->profesorService->actualizar($id, $data);
 
             return response()->json([
                 'message' => 'Profesor actualizado exitosamente',
-                'profesor' => $profesor->load('user')
+                'profesor' => $profesor
             ], 200);
 
         } catch (ValidationException $e) {
@@ -152,21 +142,16 @@ class ProfesorController extends Controller
         }
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(string $id)
     {
         try {
-            $profesor = Profesor::with('secciones', 'asignaciones')->findOrFail($id);
+            $eliminado = $this->profesorService->eliminar($id);
 
-            if ($profesor->secciones()->exists() || $profesor->asignaciones()->exists()) {
+            if (!$eliminado) {
                 return response()->json([
                     'message' => 'No se puede eliminar el profesor porque tiene secciones o asignaciones asociadas.'
                 ], 400);
             }
-
-            $profesor->delete();
 
             return response()->json([
                 'message' => 'Profesor eliminado exitosamente'

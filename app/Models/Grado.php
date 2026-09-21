@@ -16,8 +16,4 @@ class Grado extends Model
         return $this->hasMany(Seccion::class);
     }
 
-    public function asignaciones()
-    {
-        return $this->hasMany(Asignacion::class);
-    }
 }

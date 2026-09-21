@@ -16,4 +16,9 @@ class Especialidad extends Model
     {
         return $this->hasMany(Matricula::class);
     }
+
+    public function planesEstudios()
+    {
+        return $this->hasMany(PlanEstudio::class);
+    }
 }

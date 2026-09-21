@@ -22,8 +22,8 @@ return new class extends Migration
             $table->string('direccion', 100);
             $table->string('canton', 50)->nullable();
             $table->enum('estado',['inscrito', 'activo', 'inactivo', 'egresado', 'graduado'])->default('inscrito');
-            $table->unsignedBigInteger('registro_id');
-            $table->foreign('registro_id')->references('id')->on('registros');
+            $table->unsignedBigInteger('user_id');
+            $table->foreign('user_id')->references('id')->on('users');
             $table->timestamps();
         });
     }

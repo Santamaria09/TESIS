@@ -18,8 +18,8 @@ return new class extends Migration
             $table->foreign('profesor_id')->references('id')->on('profesores');
             $table->unsignedBigInteger('asignatura_id');
             $table->foreign('asignatura_id')->references('id')->on('asignaturas');
-            $table->unsignedBigInteger('grado_id');
-            $table->foreign('grado_id')->references('id')->on('grados');
+            $table->unsignedBigInteger('seccion_id');
+            $table->foreign('seccion_id')->references('id')->on('secciones');
 
             $table->timestamps();
         });

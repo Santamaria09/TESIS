@@ -3,21 +3,31 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\Asignacion;
-use Illuminate\Validation\Rule;
+use App\Services\AsignacionService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Validation\ValidationException;
 
 class AsignacionController extends Controller
 {
+    protected $asignacionService;
+
+    public function __construct(AsignacionService $asignacionService)
+    {
+        $this->asignacionService = $asignacionService;
+    }
+
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
         try {
-            $asignaciones = Asignacion::with('profesor', 'asignatura', 'grado')->orderBy('id', 'desc')->get();
-            return response()->json(['asignaciones' => $asignaciones], 200);
+            $asignaciones = $this->asignacionService->listar();
+
+            return response()->json([
+                'asignaciones' => $asignaciones
+            ], 200);
+
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al obtener las asignaciones',
@@ -35,44 +45,36 @@ class AsignacionController extends Controller
             $request->validate([
                 'anio' => 'required|integer|digits:4|min:2025|max:2100',
                 'profesor_id' => 'required|exists:profesores,id',
-                'asignatura_id' => 'required|exists:asignatura,id',
-                'grado_id' => 'required|exists:grados,id',
-
-            ],
-            [
+                'asignatura_id' => 'required|exists:asignaturas,id',
+                'seccion_id' => 'required|exists:secciones,id',
+            ], [
                 'anio.required' => 'El año es obligatorio.',
                 'anio.digits' => 'El año debe tener 4 dígitos.',
                 'anio.min' => 'El año no puede ser menor a 2025.',
                 'profesor_id.required' => 'El profesor es obligatorio.',
                 'asignatura_id.required' => 'La asignatura es obligatoria.',
-                'grado_id.required' => 'El grado es obligatorio.',
+                'seccion_id.required' => 'La sección es obligatoria.',
             ]);
 
-            $exits = Asignacion::where('profesor_id', $request->profesor_id)
-                ->where('anio', $request->anio)
-                ->where('asignatura_id', $request->asignatura_id)
-                ->where('grado_id', $request->grado_id)
-                ->exists();
+            $asignacion = $this->asignacionService->crear($request->all());
 
-            if ($exits) {
+            if (!$asignacion) {
                 return response()->json([
-                    'message' => 'La asignación ya existe para el profesor, asignatura, grado y año especificados.'
+                    'message' => 'La asignación ya existe para el profesor, asignatura, sección y año especificados.'
                 ], 422);
             }
 
-            $asignacion = Asignacion::create([
-                'anio' => $request->anio,
-                'profesor_id' => $request->profesor_id,
-                'asignatura_id' => $request->asignatura_id,
-                'grado_id' => $request->grado_id,
-            ]);
+            return response()->json([
+                'message' => 'Asignación registrada exitosamente',
+                'asignacion' => $asignacion
+            ], 201);
 
-            return response()->json(['message' => 'Asignación registrada exitosamente', 'asignacion' => $asignacion], 201);
         } catch (ValidationException $e) {
             return response()->json([
                 'message' => 'Error de validación',
                 'errors' => $e->errors()
             ], 422);
+
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al crear la asignación',
@@ -87,13 +89,23 @@ class AsignacionController extends Controller
     public function show(string $id)
     {
         try {
-            $asignacion = Asignacion::with('profesor', 'asignatura', 'grado')->findOrFail($id);
-            return response()->json(['asignacion' => $asignacion], 200);
+            $asignacion = $this->asignacionService->obtener($id);
+
+            return response()->json([
+                'asignacion' => $asignacion
+            ], 200);
+
         } catch (ModelNotFoundException $e) {
             return response()->json([
                 'message' => 'Error: asignación no encontrada',
                 'error' => $e->getMessage()
             ], 404);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al obtener la asignación',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 
@@ -111,18 +123,18 @@ class AsignacionController extends Controller
     public function destroy(string $id)
     {
         try {
-            $asignacion = Asignacion::findOrFail($id);
+            $this->asignacionService->eliminar($id);
 
-            // falta metodo de evaluacion
+            return response()->json([
+                'message' => 'Asignación eliminada exitosamente'
+            ], 200);
 
-
-            $asignacion->delete();
-            return response()->json(['message' => 'Asignación eliminada exitosamente'], 200);
         } catch (ModelNotFoundException $e) {
             return response()->json([
                 'message' => 'Error: asignación no encontrada',
                 'error' => $e->getMessage()
             ], 404);
+
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al eliminar la asignación',

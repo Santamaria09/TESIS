@@ -17,4 +17,9 @@ class Distrito extends Model
     {
         return $this->belongsTo(Municipio::class);
     }
+
+    public function estudiantes()
+    {
+        return $this->hasMany(Estudiantes::class);
+    }
 }

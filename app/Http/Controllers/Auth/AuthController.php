@@ -29,9 +29,7 @@ class AuthController extends Controller
     public function register(Request $request){
       //validamos datos a través de Request
       $validator = Validator::make($request->all(),[
-          'name' => 'required|string|max:191',
           'email' => 'required|string|email|max:191|unique:users',
-          'dui' => ['required', 'string', 'max:10', 'unique:users', new Dui()],
           'password' => 'required|string|min:8',
           'rol' => 'required|string|exists:roles,name',
       ]);
@@ -40,9 +38,7 @@ class AuthController extends Controller
       }
       //creamos el usuario
       $user = User::create([
-          'name' => $request->name,
           'email' => $request->email,
-          'dui' => $request->dui,
           'password' => Hash::make($request->password),
       ]);
 

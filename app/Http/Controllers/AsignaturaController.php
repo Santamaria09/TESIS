@@ -8,7 +8,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Validation\ValidationException;
 
-class MateriaController extends Controller
+class AsignaturaController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -16,11 +16,11 @@ class MateriaController extends Controller
     public function index()
     {
         try {
-            $materias = Materia::orderBy('id', 'desc')->get();
-            return response()->json(['materias' => $materias], 200);
+            $asignatura = Asignatura::orderBy('id', 'desc')->get();
+            return response()->json(['asignaturas' => $asignatura], 200);
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Error al obtener las materias',
+                'message' => 'Error al obtener las asignaturas',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -33,20 +33,18 @@ class MateriaController extends Controller
     {
         try {
             $request->validate([
-                'nombre' => 'required|string|max:50|unique:materias,nombre',
+                'nombre' => 'required|string|max:50|unique:asignaturas,nombre',
             ],
             [
-                'nombre.required' => 'El nombre de la materia es obligatorio.',
-                'nombre.string' => 'El nombre de la materia debe ser una cadena de texto.',
-                'nombre.max' => 'El nombre de la materia no debe exceder los 50 caracteres.',
-                'nombre.unique' => 'El nombre de la materia ya existe.',
+                'nombre.required' => 'El nombre de la asigantura es obligatorio.',
+                'nombre.unique' => 'El nombre de la asignatura ya existe.',
             ]);
 
-            $materia = Materia::create([
+            $asignatura = Asignatura::create([
                 'nombre' => $request->nombre,
             ]);
 
-            return response()->json(['message' => 'Materia registrada exitosamente', 'materia' => $materia], 201);
+            return response()->json(['message' => 'Asignatura registrada exitosamente', 'asignatura' => $asignatura], 201);
         } catch (ValidationException $e) {
             return response()->json([
                 'message' => 'Error de validación',
@@ -54,7 +52,7 @@ class MateriaController extends Controller
             ], 422);
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Error al crear la materia',
+                'message' => 'Error al crear la asignatura',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -66,11 +64,11 @@ class MateriaController extends Controller
     public function show(string $id)
     {
         try {
-            $materia = Materia::findOrFail($id);
-            return response()->json($materia);
+            $asignatura = Asignatura::findOrFail($id);
+            return response()->json($asignatura);
         } catch (ModelNotFoundException $e) {
             return response()->json([
-                'message' => 'Error materia no encontrada',
+                'message' => 'Error la asignatura no fue encontrada',
                 'error' => $e->getMessage()
             ], 404);
         }
@@ -82,25 +80,25 @@ class MateriaController extends Controller
     public function update(Request $request, string $id)
     {
         try {
-            $materia = Materia::findOrFail($id);
+            $asignatura = Asignatura::findOrFail($id);
 
             $request->validate([
                 'nombre' => [
                     'required',
                     'string',
                     'max:50',
-                    Rule::unique('materias', 'nombre')->ignore($id)
+                    Rule::unique('asignaturas', 'nombre')->ignore($id)
                 ],
             ],
             [
-                'nombre.unique' => 'El nombre de la materia ya existe.',
+                'nombre.unique' => 'El nombre de la asignatura ya existe.',
             ]);
 
-            $materia->update([
+            $asignatura->update([
                 'nombre' => $request->nombre,
             ]);
 
-            return response()->json(['message' => 'Materia actualizada exitosamente', 'materia' => $materia], 200);
+            return response()->json(['message' => 'Asignatura actualizada exitosamente', 'asignatura' => $asignatura], 200);
         } catch (ValidationException $e) {
             return response()->json([
                 'message' => 'Error de validación',
@@ -108,12 +106,12 @@ class MateriaController extends Controller
             ], 422);
         } catch (ModelNotFoundException $e) {
             return response()->json([
-                'message' => 'Error materia no encontrada',
+                'message' => 'Error la asignatura no fue encontrada',
                 'error' => $e->getMessage()
             ], 404);
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Error al actualizar la materia',
+                'message' => 'Error al actualizar la asignatura',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -125,21 +123,21 @@ class MateriaController extends Controller
     public function destroy(string $id)
     {
         try {
-            $materia = Materia::with('asignaciones')->findOrFail($id);
-            if ($materia->asignaciones()->exists()) {
-                return response()->json(['message' => 'No se puede eliminar la materia porque tiene asignaciones asociadas'], 400);
+            $asignatura = Asignatura::with('asignaciones')->findOrFail($id);
+            if ($asignatura->asignaciones()->exists()) {
+                return response()->json(['message' => 'No se puede eliminar la asignatura porque tiene asignaciones asociadas'], 400);
             }
 
-            $materia->delete();
-            return response()->json(['message' => 'Materia eliminada exitosamente'], 200);
+            $asignatura->delete();
+            return response()->json(['message' => 'Asignatura eliminada exitosamente'], 200);
         } catch (ModelNotFoundException $e) {
             return response()->json([
-                'message' => 'Error materia no encontrada',
+                'message' => 'Error la asignatura no fue encontrada',
                 'error' => $e->getMessage()
             ], 404);
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Error al eliminar la materia',
+                'message' => 'Error al eliminar la asignatura',
                 'error' => $e->getMessage()
             ], 500);
         }

@@ -13,8 +13,10 @@ return new class extends Migration
     {
         Schema::create('profesores', function (Blueprint $table) {
             $table->id();
+            $table->string('nombre', 50)->nullable(false)->unique();
             $table->date('fecha_nacimiento')->nullable(false);
             $table->string('codigo', 15)->unique()->nullable(false);
+            $table->string('dui', 15)->unique()->nullable(false);
             $table->string('telefono', 10)->unique()->nullable(false);
             $table->string('direccion', 100)->nullable(false);
             $table->unsignedBigInteger('user_id')->unique();

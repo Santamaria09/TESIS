@@ -8,10 +8,10 @@ use App\Http\Controllers\GradoController;
 use App\Http\Controllers\SeccionController;
 use App\Http\Controllers\DiscapacidadController;
 use App\Http\Controllers\EspecialidadController;
-use App\Http\Controllers\RegistroController;
 use App\Http\Controllers\EstudianteController;
 use App\Http\Controllers\ProfesorController;
 use App\Http\Controllers\MatriculaController;
+use App\Http\Controllers\PadreController;
 use App\Http\Controllers\UbicacionController;
 
 
@@ -38,7 +38,6 @@ Route::prefix('auth')->group(function(){
      Route::apiResource('profesores', ProfesorController::class);
     Route::get('distritos', [UbicacionController::class, 'distritos']);
     Route::get('distritos/{id}', [UbicacionController::class, 'distrito']);
-    Route::post('registrado', [RegistroController::class, 'registrado']);
 
 
 
@@ -47,9 +46,14 @@ Route::middleware(['auth:api'])->group(function () {
     // 🟢 1. Rutas accesibles para Usuarios Registrados (CLIENTE) y Administradores
     // Permite matricular y registrar estudiantes
     Route::middleware(['role:CLIENTE|DIRECTOR'])->group(function () {
-        Route::apiResource('estudiantes', EstudianteController::class);
-        Route::apiResource('matriculas', MatriculaController::class);
-    });
+
+    Route::apiResource('estudiantes', EstudianteController::class);
+
+    Route::apiResource('padres', PadreController::class);
+
+    Route::apiResource('matriculas', MatriculaController::class);
+
+});
 
     // 🔴 2. Rutas Exclusivas para el Administrador (Gestión del Sistema)
     Route::middleware(['role:DOCENTE'])->group(function () {

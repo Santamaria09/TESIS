@@ -11,16 +11,19 @@ class Padre extends Model
     protected $fillable = [
         'nombre',
         'dui',
-        'email',
         'telefono',
+        'email',
+        'user_id',
     ];
 
     public function estudiantes()
     {
-        return $this->belongsToMany(Estudiante::class,
-         'parientes',
-          'padre_id',
-           'estudiante_id')->withPivot('parentesco');
+        return $this->belongsToMany(Estudiante::class, 'parientes', 'padre_id', 'estudiante_id')
+            ->withPivot('parentesco');
     }
 
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
 }

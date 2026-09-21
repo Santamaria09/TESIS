@@ -13,9 +13,10 @@ class Matricula extends Model
         'anio',
         'estado',
         'foto',
-        'foto_academica',
+        'documento',
         'estudiante_id',
         'seccion_id',
+        'es_trasladado',
         'especialidad_id',
         'enfermedad_id',
         'encargado_id',
@@ -59,8 +60,23 @@ class Matricula extends Model
         return $this->belongsTo(Enfermedad::class, 'enfermedad_id');
     }
 
-    public function user()
+    public function notaFinal()
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->hasMany(NotaFinal::class);
+    }
+
+    public function boletas()
+    {
+        return $this->hasMany(Boleta::class);
+    }
+
+    public function conductas()
+    {
+        return $this->hasMany(Conducta::class);
+    }
+
+    public function calificaciones()
+    {
+        return $this->hasMany(Calificacion::class);
     }
 }

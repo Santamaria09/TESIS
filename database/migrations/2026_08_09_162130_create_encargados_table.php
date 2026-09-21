@@ -14,11 +14,12 @@ return new class extends Migration
         Schema::create('encargados', function (Blueprint $table) {
             $table->id();
             $table->string('nombre', 50);
-            $table->enum('parentesco', ['Padre', 'Madre', 'Tío(a)', 'Abuelo(a)', 'Hermano(a)', 'Otro']);
+            $table->enum('parentesco', ['Tío(a)', 'Abuelo(a)', 'Hermano(a)','Primo(a)', 'Otro']);
             $table->string('telefono', 10);
             $table->string('dui', 10);
             $table->string('direccion', 100);
-            $table->string('correo', 100)->nullable();
+             $table->unsignedBigInteger('user_id')->nullable()->unique();
+            $table->foreign('user_id')->references('id')->on('users');
             $table->timestamps();
         });
     }

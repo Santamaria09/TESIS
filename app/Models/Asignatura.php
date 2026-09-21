@@ -17,4 +17,9 @@ class Materia extends Model
     {
         return $this->hasMany(Asignacion::class);
     }
+
+    public function planEstudio()
+    {
+        return $this->belongsTo(PlanEstudio::class, 'plan_estudio_id');
+    }
 }

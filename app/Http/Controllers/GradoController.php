@@ -38,7 +38,6 @@ class GradoController extends Controller
             [
                 'nombre.required' => 'El nombre del grado es obligatorio.',
                 'nombre.string' => 'El nombre del grado debe ser una cadena de texto.',
-                'nombre.max' => 'El nombre del grado no debe exceder los 50 caracteres.',
                 'nombre.unique' => 'El nombre del grado ya está registrado.',
             ]);
 
@@ -130,7 +129,7 @@ class GradoController extends Controller
         try {
             $grado = Grado::findOrFail($id);
 
-            if ($grado->secciones()->exists() || $grado->asignaciones()->exists()) {
+            if ($grado->secciones()->exists()) {
                 return response()->json([
                     'message' => 'No se puede eliminar el grado porque tiene secciones o asignaciones asociadas'
                 ], 409);

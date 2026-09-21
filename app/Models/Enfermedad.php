@@ -12,4 +12,9 @@ class Enfermedad extends Model
         'nombre',
         'medicamento',
     ];
+
+    public function matriculas()
+    {
+        return $this->hasMany(Matricula::class);
+    }
 }

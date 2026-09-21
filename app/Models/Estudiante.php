@@ -17,7 +17,7 @@ class Estudiante extends Model
         'direccion',
         'canton',
         'estado',
-        'registro_id',
+        'user_id',
     ];
 
     public function distrito()
@@ -25,9 +25,9 @@ class Estudiante extends Model
         return $this->belongsTo(Distrito::class, 'distrito_id');
     }
 
-    public function registro()
+    public function user()
     {
-        return $this->belongsTo(Registro::class, 'registro_id');
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     public function padres()

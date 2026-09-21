@@ -12,22 +12,33 @@ class Asignacion extends Model
         'anio',
         'profesor_id',
         'asignatura_id',
-        'grado_id',
+        'seccion_id',
 
     ];
 
     public function profesor()
     {
-        return $this->belongsTo(Profesor::class);
+        return $this->belongsTo(Profesor::class, 'profesor_id');
     }
 
-    public function grado()
+    public function seccion()
     {
-        return $this->belongsTo(Grado::class);
+        return $this->belongsTo(Seccion::class, 'seccion_id');
     }
 
     public function asignatura()
     {
-        return $this->belongsTo(Asignatura::class);
+        return $this->belongsTo(Asignatura::class, 'asignatura_id');
+    }
+
+    public function boletas()
+    {
+        return $this->hasMany(Boleta::class);
+    }
+
+    public function evaluaciones()
+    {
+        return $this->hasMany(Evaluacion::class);
     }
 }
+

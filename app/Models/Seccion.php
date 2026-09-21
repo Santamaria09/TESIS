@@ -19,16 +19,21 @@ class Seccion extends Model
 
     public function grado()
     {
-        return $this->belongsTo(Grado::class);
+        return $this->belongsTo(Grado::class, 'grado_id');
     }
 
     public function profesor()
     {
-        return $this->belongsTo(Profesor::class);
+        return $this->belongsTo(Profesor::class, 'profesor_id');
     }
 
     public function matriculas()
     {
         return $this->hasMany(Matricula::class);
+    }
+
+    public function asignaciones()
+    {
+        return $this->hasMany(Asignacion::class);
     }
 }

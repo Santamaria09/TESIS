@@ -17,6 +17,8 @@ return new class extends Migration
             $table->string('dui', 10)->unique();
             $table->string('email', 100)->nullable();
             $table->string('telefono', 15)->nullable();
+            $table->unsignedBigInteger('user_id')->nullable()->unique();
+            $table->foreign('user_id')->references('id')->on('users');
             $table->timestamps();
         });
     }
