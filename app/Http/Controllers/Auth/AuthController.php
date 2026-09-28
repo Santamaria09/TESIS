@@ -68,19 +68,19 @@ class AuthController extends Controller
   }
 
   public function me(){
-  return response()->json(auth()->user());
-}
+      return response()->json(auth()->user());
+  }
 
-//método para invalidar un token (logout)
-public function logout(){
-  auth()->logout();
-  return response()->json([
-      'message' => 'Sesión cerrada correctamente'
-  ]);
-}
+  //método para invalidar un token (logout)
+  public function logout(){
+      auth()->logout();
+      return response()->json([
+          'message' => 'Sesión cerrada correctamente'
+      ]);
+  }
 
-//método para refrescar el token
-public function refresh(){
-  return $this->responseWithToken(auth()->refresh());
-}
+  //método para refrescar el token
+  public function refresh(){
+      return $this->responseWithToken(auth()->refresh());
+  }
 }

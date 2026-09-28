@@ -44,4 +44,8 @@ class PadreService
 
         return $padre->load('user');
     }
+    public function buscarPorDui($dui)
+    {
+        return Padre::where('dui', $dui)->first();
+    }
 }

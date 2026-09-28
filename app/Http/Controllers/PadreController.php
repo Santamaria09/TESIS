@@ -6,6 +6,7 @@ use App\Rules\Dui;
 use App\Services\PadreService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use App\Models\Padre; // Asegúrate de importar el modelo si no usas el Service para el GET
 
 class PadreController extends Controller
 {
@@ -15,8 +16,36 @@ class PadreController extends Controller
     {
         $this->padreService = $padreService;
     }
+    
+    public function buscarPorDui(Request $request)
+    {
+        $request->validate([
+            'dui' => 'required|string'
+        ]);
 
-    public function store(Request $request)
+        try {
+            $padre = $this->padreService->buscarPorDui($request->dui);
+
+            if ($padre) {
+                return response()->json([
+                    'encontrado' => true,
+                    'padre' => $padre
+                ], 200);
+            }
+
+            return response()->json([
+                'encontrado' => false,
+                'message' => 'No se encontró ningún padre con este DUI'
+            ], 404);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al buscar el padre',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }    
+   public function store(Request $request)
     {
         try {
             $validated = $request->validate([
@@ -27,9 +56,7 @@ class PadreController extends Controller
                 'es_encargado' => 'required|boolean',
             ]);
 
-            $validated['user_id'] = $validated['es_encargado']
-                ? auth()->id()
-                : null;
+            $validated['user_id'] = $validated['es_encargado'] ? auth()->id() : null;
 
             $padre = $this->padreService->crear($validated);
 
@@ -38,7 +65,7 @@ class PadreController extends Controller
                 'padre' => $padre,
             ], 201);
 
-        } catch (ValidationException $e) {
+        } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'message' => 'Error de validación',
                 'errors' => $e->errors(),
